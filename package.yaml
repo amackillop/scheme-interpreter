@@ -1,0 +1,36 @@
+library:
+  source-dirs: src
+tests:
+  scheme-interpreter-test:
+    source-dirs: test
+    main: Spec.hs
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - scheme-interpreter
+copyright: 2019 Austin Mackillop
+maintainer: austin.mackillop@gmail.com
+dependencies:
+- parsec
+- base >= 4.7 && < 5
+name: scheme-interpreter
+version: 0.1.0.0
+extra-source-files:
+- README.md
+- ChangeLog.md
+author: Austin Mackillop
+github: amackillop/scheme-interpreter
+license: BSD3
+executables:
+  scheme-interpreter-exe:
+    source-dirs: app
+    main: Main.hs
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - scheme-interpreter
+description: Please see the README on GitHub at <https://github.com/amackillop/scheme-interpreter#readme>
