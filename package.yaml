@@ -13,6 +13,7 @@ tests:
 copyright: 2019 Austin Mackillop
 maintainer: austin.mackillop@gmail.com
 dependencies:
+- text
 - parsec
 - base >= 4.7 && < 5
 name: scheme-interpreter

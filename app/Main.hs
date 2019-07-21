@@ -1,6 +1,10 @@
-module Main where
+{-# LANGUAGE OverloadedStrings #-}
 
-import Lib
+module Main where
+    
+import           Data.Text                     as T
+import           System.Environment
+import           Parsing
 
 main :: IO ()
-main = someFunc
+main = getLine >>= putStr . readExpr
