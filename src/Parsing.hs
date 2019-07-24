@@ -24,7 +24,7 @@ data LispVal = Atom String
 instance Show LispVal where show = showVal
 
 symbol :: Parser Char
-symbol = oneOf "!#$%&|*+-/:"
+symbol = oneOf "!#$%&|*+-/:?"
 
 spaces :: Parser ()
 spaces = skipMany1 space
@@ -74,17 +74,12 @@ parseNumber = (Number . read <$> many1 digit) <|> (Number <$> radixNum)
 parseExpr :: Parser LispVal
 parseExpr =
   try parseNumber
-    <|> parseString
-    <|> parseQuoted
-    <|> do
-          char '('
-          x <-
-            try parseList
-            <|> try parseDottedList
-            <|> try parseBackQuotes
-            <|> try parseVector
-          char ')'
-          return x
+    <|> try parseString
+    <|> try parseQuoted
+    <|> try parseList
+    <|> try parseDottedList
+    <|> try parseBackQuotes
+    <|> try parseVector
     <|> parseAtom
 
 inParens :: Parser a -> Parser a
@@ -113,10 +108,10 @@ parseBackQuotes =
 parseVector :: Parser LispVal
 parseVector = Vector . V.fromList <$> inParens (sepBy parseExpr spaces)
 
-readExpr :: String -> String
+readExpr :: String -> LispVal
 readExpr input = case parse parseExpr "lisp" input of
-  Left  err -> "No match: " ++ show err
-  Right val -> "Found value: " ++ show val
+  Left  err -> String $ "No match: " ++ show err
+  Right val -> val
 
 showVal :: LispVal -> String
 showVal (String contents) = "\"" ++ contents ++ "\""
@@ -130,3 +125,49 @@ showVal (DottedList head tail) =
 
 unwordsList :: [LispVal] -> String
 unwordsList = unwords . map showVal
+
+eval :: LispVal -> LispVal
+eval val@(String _) = val
+eval val@(Number _) = val
+eval val@(Bool _) = val
+eval (List [Atom "quote", val]) = val
+eval (List (Atom func : args)) = apply func $ map eval args
+eval _ = String "Eval Error"
+
+apply :: String -> [LispVal] -> LispVal
+apply func args =
+  maybe (String $ "Operation " ++ func ++ " not yet supported") ($ args)
+    $ lookup func primitives
+
+primitives :: [(String, [LispVal] -> LispVal)]
+primitives =
+  [ ("+"        , numericBinOp (+))
+  , ("-"        , numericBinOp (-))
+  , ("*"        , numericBinOp (*))
+  , ("/"        , numericBinOp div)
+  , ("mod"      , numericBinOp mod)
+  , ("quotient" , numericBinOp quot)
+  , ("remainder", numericBinOp rem)
+  , ("symbol?"  , isSymbol)
+  , ("string?"  , isString)
+  , ("number?"  , isNumber)
+  ]
+
+numericBinOp :: (Integer -> Integer -> Integer) -> [LispVal] -> LispVal
+numericBinOp op params = Number $ foldl1 op $ map unpackNum params
+
+isSymbol :: [LispVal] -> LispVal
+isSymbol [Atom _] = Bool True
+isSymbol _        = Bool False
+
+isString :: [LispVal] -> LispVal
+isString [String _] = Bool True
+isString _          = Bool False
+
+isNumber :: [LispVal] -> LispVal
+isNumber [Number _] = Bool True
+isNumber _          = Bool False
+
+unpackNum :: LispVal -> Integer
+unpackNum (Number n) = n
+unpackNum _          = 0
