@@ -1,28 +1,26 @@
 -- {-# LANGUAGE OverloadedStrings #-}
 
-module Parsing where
+module Parse where
 
 
 import           Text.ParserCombinators.Parsec
                                          hiding ( spaces )
-
-import qualified Data.Text                     as T
+                                         
+-- import qualified Data.Text                     as T
 import qualified Data.Char                     as C
 import qualified Data.Vector                   as V
 import           Numeric
 
 data LispVal = Atom String
-             | List [LispVal]
-             | DottedList [LispVal] LispVal
-             | Vector (V.Vector LispVal)
-             | Number Integer
-             | Float Float
-             | Character Char
-             | String String
-             | Bool Bool
-
-instance Show LispVal where show = showVal
-
+  | List [LispVal]
+  | DottedList [LispVal] LispVal
+  | Vector (V.Vector LispVal)
+  | Number Integer
+  | Float Float
+  | Character Char
+  | String String
+  | Bool Bool
+      
 symbol :: Parser Char
 symbol = oneOf "!#$%&|*+-/:?"
 
@@ -38,7 +36,7 @@ radixNum = do
   base   <- oneOf "bodx"
   digits <- many1 $ parser base
   return $ fst $ head $ reader base digits
- where
+  where
   parser :: Char -> Parser Char
   parser b = case b of
     'b' -> oneOf "01"
@@ -113,61 +111,3 @@ readExpr input = case parse parseExpr "lisp" input of
   Left  err -> String $ "No match: " ++ show err
   Right val -> val
 
-showVal :: LispVal -> String
-showVal (String contents) = "\"" ++ contents ++ "\""
-showVal (Atom   name    ) = name
-showVal (Number contents) = show contents
-showVal (Bool   True    ) = "#t"
-showVal (Bool   False   ) = "#f"
-showVal (List   contents) = "(" ++ unwordsList contents ++ ")"
-showVal (DottedList head tail) =
-  "(" ++ unwordsList head ++ " . " ++ showVal tail ++ ")"
-
-unwordsList :: [LispVal] -> String
-unwordsList = unwords . map showVal
-
-eval :: LispVal -> LispVal
-eval val@(String _) = val
-eval val@(Number _) = val
-eval val@(Bool _) = val
-eval (List [Atom "quote", val]) = val
-eval (List (Atom func : args)) = apply func $ map eval args
-eval _ = String "Eval Error"
-
-apply :: String -> [LispVal] -> LispVal
-apply func args =
-  maybe (String $ "Operation " ++ func ++ " not yet supported") ($ args)
-    $ lookup func primitives
-
-primitives :: [(String, [LispVal] -> LispVal)]
-primitives =
-  [ ("+"        , numericBinOp (+))
-  , ("-"        , numericBinOp (-))
-  , ("*"        , numericBinOp (*))
-  , ("/"        , numericBinOp div)
-  , ("mod"      , numericBinOp mod)
-  , ("quotient" , numericBinOp quot)
-  , ("remainder", numericBinOp rem)
-  , ("symbol?"  , isSymbol)
-  , ("string?"  , isString)
-  , ("number?"  , isNumber)
-  ]
-
-numericBinOp :: (Integer -> Integer -> Integer) -> [LispVal] -> LispVal
-numericBinOp op params = Number $ foldl1 op $ map unpackNum params
-
-isSymbol :: [LispVal] -> LispVal
-isSymbol [Atom _] = Bool True
-isSymbol _        = Bool False
-
-isString :: [LispVal] -> LispVal
-isString [String _] = Bool True
-isString _          = Bool False
-
-isNumber :: [LispVal] -> LispVal
-isNumber [Number _] = Bool True
-isNumber _          = Bool False
-
-unpackNum :: LispVal -> Integer
-unpackNum (Number n) = n
-unpackNum _          = 0

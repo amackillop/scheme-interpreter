@@ -4,13 +4,15 @@ module Main where
 
 -- import           Data.Text                     as T
 import           System.Environment
-import           Parsing
 import           System.IO                      ( hFlush
                                                 , stdout
                                                 )
 import           Control.Monad                  ( unless
                                                 , forever
                                                 )
+
+import           Parse
+import           Eval
 
 main :: IO ()
 main = forever $ input >>= print . eval . readExpr
