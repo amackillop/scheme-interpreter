@@ -18,7 +18,7 @@ import           Eval
 main :: IO ()
 main = runInputT defaultSettings $ loop
  where
-  loop =  ignoreCtrlC $ getInputLine "scheme > " >>= \case
+  loop = ignoreCtrlC $ getInputLine "scheme > " >>= \case
     Nothing    -> void $ outputStrLn "Moriturus te saluto."
     Just ""    -> loop
     Just input -> outputStrLn (show . eval . readExpr $ input) >> loop
