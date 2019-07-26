@@ -16,7 +16,7 @@ import           Parse
 import           Eval
 
 main :: IO ()
-main = runInputT defaultSettings $ loop
+main = runInputT defaultSettings loop
  where
   loop = ignoreCtrlC $ getInputLine "scheme > " >>= \case
     Nothing    -> void $ outputStrLn "Moriturus te saluto."
