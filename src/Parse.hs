@@ -13,7 +13,7 @@ import qualified Data.Vector                   as V
                                                 ( Vector
                                                 , fromList
                                                 )
-import qualified         Numeric as N
+import qualified Numeric                       as N
 
 data LispVal = Atom String
   | List [LispVal]
@@ -23,7 +23,7 @@ data LispVal = Atom String
   | Float Float
   | Character Char
   | String String
-  | Bool Bool
+  | Bool Bool deriving Eq
 
 symbol :: Parser Char
 symbol = oneOf "!$%&|*+-/:<=?>@^_~#"
@@ -77,6 +77,14 @@ parseAtom = do
     "#f" -> Bool False
     _    -> Atom atom
 
+parseChar :: Parser LispVal
+parseChar = Character <$> (string "#\\" >> (parseCharName <|> anyChar))
+
+parseCharName :: Parser Char
+parseCharName = (string "space" <|> string "newline") >>= return . \case
+  "space"   -> ' '
+  "newline" -> '\n'
+
 parseNumber :: Parser LispVal
 parseNumber = (Number . read <$> many1 digit) <|> (Number <$> radixNum)
 
@@ -89,6 +97,7 @@ parseExpr =
     <|> try parseDottedList
     <|> try parseBackQuotes
     <|> try parseVector
+    <|> try parseChar
     <|> parseAtom
 
 inParens :: Parser a -> Parser a
@@ -115,7 +124,8 @@ parseBackQuotes =
   char '`' >> parseExpr >>= (\x -> return $ List [Atom "backquote", x])
 
 parseVector :: Parser LispVal
-parseVector = Vector . V.fromList <$> (char '#' >> inParens (sepBy parseExpr spaces))
+parseVector =
+  Vector . V.fromList <$> (char '#' >> inParens (sepBy parseExpr spaces))
 
 readExpr :: String -> LispVal
 readExpr input = case parse parseExpr "lisp" input of
