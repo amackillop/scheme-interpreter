@@ -1,5 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
-
 module Eval where
 
 import qualified Data.Vector                   as V
@@ -9,19 +7,18 @@ import qualified Data.Vector                   as V
 import           Parse                          ( LispVal(..) )
 
 instance Show LispVal where
-    show (String contents) = "\"" ++ contents ++ "\""
-    show (Character val)   = "#\\" ++ case val of
-      ' '  -> "space"
-      '\n' -> "newline"
-      _    -> [val]
-    show (Atom   name    ) = name
-    show (Number num)      = show num
-    show (Bool   True    ) = "#t"
-    show (Bool   False   ) = "#f"
-    show (List   contents) = "(" ++ unwordsList contents ++ ")"
-    show (DottedList head tail) =
-      "(" ++ unwordsList head ++ " . " ++ show tail ++ ")"
-    show (Vector contents) = "#(" ++ unwordsList (V.toList contents) ++ ")"
+  show (String val) = "\"" ++ val ++ "\""
+  show (Character val)   = "#\\" ++ case val of
+    ' '  -> "space"
+    '\n' -> "newline"
+    _    -> [val]
+  show (Atom   val ) = val
+  show (Number val)  = show val
+  show (Bool   val) = if val then "#t" else "#f"
+  show (List   contents) = "(" ++ unwordsList contents ++ ")"
+  show (DottedList head tail) =
+    "(" ++ unwordsList head ++ " . " ++ show tail ++ ")"
+  show (Vector contents) = "#(" ++ unwordsList (V.toList contents) ++ ")"
 
 unwordsList :: [LispVal] -> String
 unwordsList = unwords . map show
