@@ -2,13 +2,8 @@
 
 module Main where
 
-import           System.Environment
 import           System.Console.Haskeline
-import           System.IO                      ( hFlush
-                                                , stdout
-                                                )
-import           Control.Monad                  ( unless
-                                                , forever
+import           Control.Monad                  (forever
                                                 , void
                                                 )
 
