@@ -1,15 +1,19 @@
 -- {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Parse where
 
 
 import           Text.ParserCombinators.Parsec
                                          hiding ( spaces )
-                                         
+
 -- import qualified Data.Text                     as T
 import qualified Data.Char                     as C
 import qualified Data.Vector                   as V
-import           Numeric
+                                                ( Vector
+                                                , fromList
+                                                )
+import qualified         Numeric as N
 
 data LispVal = Atom String
   | List [LispVal]
@@ -20,15 +24,20 @@ data LispVal = Atom String
   | Character Char
   | String String
   | Bool Bool
-      
+
 symbol :: Parser Char
-symbol = oneOf "!#$%&|*+-/:?"
+symbol = oneOf "!$%&|*+-/:<=?>@^_~#"
 
 spaces :: Parser ()
 spaces = skipMany1 space
 
-escaped :: Parser Char
-escaped = tab <|> newline <|> (string "\\" >> oneOf "r\\\"")
+escaped :: Parser String
+escaped = char '\\' >> oneOf "\\\"ntr" >>= return . \case
+  '\\' -> "\\"
+  '"'  -> "\""
+  't'  -> "\t"
+  'n'  -> "\n"
+  'r'  -> "\r"
 
 radixNum :: Parser Integer
 radixNum = do
@@ -36,7 +45,7 @@ radixNum = do
   base   <- oneOf "bodx"
   digits <- many1 $ parser base
   return $ fst $ head $ reader base digits
-  where
+ where
   parser :: Char -> Parser Char
   parser b = case b of
     'b' -> oneOf "01"
@@ -45,16 +54,18 @@ radixNum = do
     'x' -> hexDigit
   reader :: Char -> String -> [(Integer, String)]
   reader b = case b of
-    'b' -> readInt 2 (`elem` "01") C.digitToInt
-    'o' -> readOct
-    'd' -> readDec
-    'x' -> readHex
+    'b' -> N.readInt 2 (`elem` "01") C.digitToInt
+    'o' -> N.readOct
+    'd' -> N.readDec
+    'x' -> N.readHex
 
 -- Add floats, complex numbers etc.
 
 parseString :: Parser LispVal
 parseString =
-  String <$> (char '"' *> many (escaped <|> noneOf ['"']) <* char '"')
+  String
+    .   concat
+    <$> (char '"' *> (many $ many1 (noneOf "\"\\") <|> escaped) <* char '"')
 
 parseAtom :: Parser LispVal
 parseAtom = do
@@ -104,7 +115,7 @@ parseBackQuotes =
   char '`' >> parseExpr >>= (\x -> return $ List [Atom "backquote", x])
 
 parseVector :: Parser LispVal
-parseVector = Vector . V.fromList <$> inParens (sepBy parseExpr spaces)
+parseVector = Vector . V.fromList <$> (char '#' >> inParens (sepBy parseExpr spaces))
 
 readExpr :: String -> LispVal
 readExpr input = case parse parseExpr "lisp" input of

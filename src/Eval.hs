@@ -1,6 +1,8 @@
 module Eval where
 
-import Parse (LispVal (..))
+import qualified Data.Vector                   as V
+                                                ( Vector, toList )
+import           Parse                          ( LispVal(..) )
 
 instance Show LispVal where
     show (String contents) = "\"" ++ contents ++ "\""
@@ -11,7 +13,8 @@ instance Show LispVal where
     show (List   contents) = "(" ++ unwordsList contents ++ ")"
     show (DottedList head tail) =
       "(" ++ unwordsList head ++ " . " ++ show tail ++ ")"
-      
+    show (Vector contents) = "#(" ++ unwordsList (V.toList contents) ++ ")"
+
 unwordsList :: [LispVal] -> String
 unwordsList = unwords . map show
 
@@ -21,6 +24,7 @@ eval val@(Number _) = val
 eval val@(Bool _) = val
 eval (List [Atom "quote", val]) = val
 eval (List (Atom func : args)) = apply func $ map eval args
+eval val@(Vector _) = val
 eval _ = String "Eval Error"
 
 apply :: String -> [LispVal] -> LispVal
