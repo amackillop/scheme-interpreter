@@ -10,7 +10,10 @@ import           Parse                          ( LispVal(..) )
 
 instance Show LispVal where
     show (String contents) = "\"" ++ contents ++ "\""
-    show (Character val)   = "#\\" ++ [val]
+    show (Character val)   = "#\\" ++ case val of
+      ' '  -> "space"
+      '\n' -> "newline"
+      _    -> [val]
     show (Atom   name    ) = name
     show (Number num)      = show num
     show (Bool   True    ) = "#t"
@@ -58,8 +61,7 @@ primitives =
   ]
 
 equals :: [LispVal] -> LispVal
-equals [Atom x, Atom y] = Bool $ x == y
-equals (x : xs)         = Bool $ all (== x) xs
+equals (x : xs) = Bool $ all (== x) xs
 
 str2Sym :: [LispVal] -> LispVal
 str2Sym [String x] = Atom x
