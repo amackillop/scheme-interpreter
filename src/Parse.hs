@@ -14,7 +14,6 @@ import qualified Data.Vector                   as V
                                                 , fromList
                                                 )
 import qualified Numeric                       as N
-
 data LispVal = Atom String
   | List [LispVal]
   | DottedList [LispVal] LispVal
