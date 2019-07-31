@@ -4,7 +4,7 @@ import qualified Data.Vector                   as V
                                                 ( Vector
                                                 , toList
                                                 )
-import           Parse                          ( LispVal(..) )
+import           LispVal                        ( LispVal(..) )
 
 instance Show LispVal where
   show (String val) = "\"" ++ val ++ "\""

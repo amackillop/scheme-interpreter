@@ -1,4 +1,3 @@
--- {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
 
 module Parse where
@@ -7,22 +6,13 @@ module Parse where
 import           Text.ParserCombinators.Parsec
                                          hiding ( spaces )
 
--- import qualified Data.Text                     as T
 import qualified Data.Char                     as C
 import qualified Data.Vector                   as V
                                                 ( Vector
                                                 , fromList
                                                 )
 import qualified Numeric                       as N
-data LispVal = Atom String
-  | List [LispVal]
-  | DottedList [LispVal] LispVal
-  | Vector (V.Vector LispVal)
-  | Number Integer
-  | Float Float
-  | Character Char
-  | String String
-  | Bool Bool deriving Eq
+import           LispVal (LispVal (..))
 
 symbol :: Parser Char
 symbol = oneOf "!$%&|*+-/:<=?>@^_~#"
