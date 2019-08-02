@@ -5,6 +5,8 @@ module Parse where
 
 import           Text.ParserCombinators.Parsec
                                          hiding ( spaces )
+import           Control.Monad.Except
+
 
 import qualified Data.Char                     as C
 import qualified Data.Vector                   as V
@@ -12,7 +14,10 @@ import qualified Data.Vector                   as V
                                                 , fromList
                                                 )
 import qualified Numeric                       as N
-import           LispVal (LispVal (..))
+import           Types
+import           Error
+
+type ThrowsError = Either String
 
 symbol :: Parser Char
 symbol = oneOf "!$%&|*+-/:<=?>@^_~#"
@@ -116,8 +121,7 @@ parseVector :: Parser LispVal
 parseVector =
   Vector . V.fromList <$> (char '#' >> inParens (sepBy parseExpr spaces))
 
-readExpr :: String -> LispVal
+readExpr :: String -> ThrowsError LispVal
 readExpr input = case parse parseExpr "lisp" input of
-  Left  err -> String $ "No match: " ++ show err
-  Right val -> val
-
+  Left  err -> throwError . show $ Parser err
+  Right val -> return val

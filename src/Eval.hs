@@ -4,41 +4,31 @@ import qualified Data.Vector                   as V
                                                 ( Vector
                                                 , toList
                                                 )
-import           LispVal                        ( LispVal(..) )
+import           Control.Monad.Except
+import           Types
+import           Error
 
-instance Show LispVal where
-  show (String val) = "\"" ++ val ++ "\""
-  show (Character val)   = "#\\" ++ case val of
-    ' '  -> "space"
-    '\n' -> "newline"
-    _    -> [val]
-  show (Atom   val ) = val
-  show (Number val)  = show val
-  show (Bool   val) = if val then "#t" else "#f"
-  show (List   contents) = "(" ++ unwordsList contents ++ ")"
-  show (DottedList head tail) =
-    "(" ++ unwordsList head ++ " . " ++ show tail ++ ")"
-  show (Vector contents) = "#(" ++ unwordsList (V.toList contents) ++ ")"
+type ThrowsError = Either String
 
-unwordsList :: [LispVal] -> String
-unwordsList = unwords . map show
+eval :: LispVal -> ThrowsError LispVal
+eval val@(String    _                  ) = return val
+eval val@(Number    _                  ) = return val
+eval val@(Bool      _                  ) = return val
+eval val@(Character _                  ) = return val
+eval (    List      [Atom "quote", val]) = return val
+eval (    List      (Atom func : args) ) = mapM eval args >>= apply func
+eval val@(Vector    _                  ) = return val
+eval badForm =
+  throwError . show $ BadSpecialForm "Unrecognized special form" badForm
 
-eval :: LispVal -> LispVal
-eval val@(String _) = val
-eval val@(Number _) = val
-eval val@(Bool _) = val
-eval val@(Character _) = val
-eval (List [Atom "quote", val]) = val
-eval (List (Atom func : args)) = apply func $ map eval args
-eval val@(Vector _) = val
-eval _ = String "Eval Error"
-
-apply :: String -> [LispVal] -> LispVal
+apply :: String -> [LispVal] -> ThrowsError LispVal
 apply func args =
-  maybe (String $ "Operation " ++ func ++ " not yet supported") ($ args)
+  maybe
+      (throwError . show $ NotFunction "Unrecognized function/unsupported" func)
+      ($ args)
     $ lookup func primitives
 
-primitives :: [(String, [LispVal] -> LispVal)]
+primitives :: [(String, [LispVal] -> ThrowsError LispVal)]
 primitives =
   [ ("+"             , numericBinOp (+))
   , ("-"             , numericBinOp (-))
