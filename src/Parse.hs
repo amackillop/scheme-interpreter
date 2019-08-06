@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 
 module Parse where
@@ -121,7 +122,7 @@ parseVector :: Parser LispVal
 parseVector =
   Vector . V.fromList <$> (char '#' >> inParens (sepBy parseExpr spaces))
 
-readExpr :: String -> ThrowsError LispVal
+readExpr :: MonadError LispError m => String -> m LispVal
 readExpr input = case parse parseExpr "lisp" input of
-  Left  err -> throwError . show $ Parser err
+  Left  err -> throwError $ Parser err
   Right val -> return val
