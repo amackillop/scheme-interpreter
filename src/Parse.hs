@@ -1,7 +1,10 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 
-module Parse where
+module Parse
+  ( readExpr
+  )
+where
 
 
 import           Text.ParserCombinators.Parsec
@@ -122,7 +125,7 @@ parseVector :: Parser LispVal
 parseVector =
   Vector . V.fromList <$> (char '#' >> inParens (sepBy parseExpr spaces))
 
-readExpr :: MonadError LispError m => String -> m LispVal
+readExpr :: String -> ThrowsError LispVal
 readExpr input = case parse parseExpr "lisp" input of
-  Left  err -> throwError $ Parser err
+  Left  err -> throwError . show $ Parser err
   Right val -> return val

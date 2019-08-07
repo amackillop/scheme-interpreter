@@ -9,7 +9,9 @@ import           Control.Monad.Except
 import           Types
 import           Error
 
-eval :: MonadError LispError m => LispVal -> m LispVal
+type ThrowsError = Either String
+
+eval :: LispVal -> ThrowsError LispVal
 eval val@(String    _                  ) = return val
 eval val@(Number    _                  ) = return val
 eval val@(Bool      _                  ) = return val
@@ -18,24 +20,24 @@ eval (    List      [Atom "quote", val]) = return val
 eval (    List      (Atom func : args) ) = mapM eval args >>= apply func
 eval val@(Vector    _                  ) = return val
 eval badForm =
-  throwError $ BadSpecialForm "Unrecognized special form" badForm
+  throwError . show $ BadSpecialForm "Unrecognized special form" badForm
 
-apply :: MonadError LispError m => String -> [LispVal] -> m LispVal
+apply :: String -> [LispVal] -> ThrowsError LispVal
 apply func args =
   maybe
-      (throwError $ NotFunction "Unrecognized function/unsupported" func)
+      (throwError . show $ NotFunction "Unrecognized function/unsupported" func)
       ($ args)
     $ lookup func primitives
 
-primitives :: MonadError LispError m => [(String, [LispVal] -> m LispVal)]
+primitives :: [(String, [LispVal] -> ThrowsError LispVal)]
 primitives =
-  [ ("+"             , numericBinOp (+))
-  , ("-"             , numericBinOp (-))
-  , ("*"             , numericBinOp (*))
-  , ("/"             , numericBinOp div)
-  , ("mod"           , numericBinOp mod)
-  , ("quotient"      , numericBinOp quot)
-  , ("remainder"     , numericBinOp rem)
+  [ ("+"             , numericOp (+))
+  , ("-"             , numericOp (-))
+  , ("*"             , numericOp (*))
+  , ("/"             , numericOp div)
+  , ("mod"           , numericOp mod)
+  , ("quotient"      , numericOp quot)
+  , ("remainder"     , numericOp rem)
   , ("symbol?"       , isSymbol)
   , ("string?"       , isString)
   , ("number?"       , isNumber)
@@ -46,33 +48,32 @@ primitives =
   , ("symbol->string", sym2str)
   ]
 
-equals :: MonadError LispError m => [LispVal] -> m LispVal
+equals :: [LispVal] -> ThrowsError LispVal
 equals (x : xs) = return $ Bool $ all (== x) xs
 
-str2Sym :: MonadError LispError m => [LispVal] -> m LispVal
+str2Sym :: [LispVal] -> ThrowsError LispVal
 str2Sym [String x] = return $ Atom x
-str2Sym [notString] = throwError $ TypeMismatch "string" notString
+str2Sym [notString] = throwError . show $ TypeMismatch "string" notString
 
-sym2str :: MonadError LispError m => [LispVal] -> m LispVal
+sym2str :: [LispVal] -> ThrowsError LispVal
 sym2str [Atom x] = return $ String x
-sym2str [notAtom] = throwError $ TypeMismatch "symbol" notAtom
+sym2str [notAtom] = throwError . show $ TypeMismatch "symbol" notAtom
 
-numericBinOp :: MonadError LispError m => (Integer -> Integer -> Integer) -> [LispVal] -> m LispVal
-numericBinOp op singleVal@[_] = throwError $ NumArgs 2 singleVal
-numericBinOp op params        = Number . foldl1 op <$> mapM unpackNum params
+numericOp :: (Integer -> Integer -> Integer) -> [LispVal] -> ThrowsError LispVal
+numericOp op params        = Number . foldl1 op <$> mapM unpackNum params
 
-isSymbol :: MonadError LispError m => [LispVal] -> m LispVal
+isSymbol :: [LispVal] -> ThrowsError LispVal
 isSymbol [Atom _] = return $ Bool True
 isSymbol _        = return $ Bool False
 
-isString :: MonadError LispError m => [LispVal] -> m LispVal
+isString :: [LispVal] -> ThrowsError LispVal
 isString [String _] = return $ Bool True
 isString _          = return $ Bool False
 
-isNumber :: MonadError LispError m => [LispVal] -> m LispVal
+isNumber :: [LispVal] -> ThrowsError LispVal
 isNumber [Number _] = return $ Bool True
 isNumber _          = return $ Bool False
 
-unpackNum :: MonadError LispError m => LispVal -> m Integer
+unpackNum :: LispVal -> ThrowsError Integer
 unpackNum (Number n) = return n
-unpackNum notNum     = throwError $ TypeMismatch "number" notNum
+unpackNum notNum     = throwError . show $ TypeMismatch "number" notNum

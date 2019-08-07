@@ -1,19 +1,15 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 
 module Main where
 
 import           System.Console.Haskeline
-import           Control.Monad                  (void
-                                                )
-import Control.Monad.Except
+import           Control.Monad                  ( void )
+import           Control.Monad.Except
 import           Parse
-import Error
+import           Error
 import           Eval
-import Types
+import           Types
 
-instance MonadError LispError IO where
-  
 
 main :: IO ()
 main = runInputT defaultSettings loop
@@ -21,6 +17,9 @@ main = runInputT defaultSettings loop
   loop = ignoreCtrlC $ getInputLine "scheme > " >>= \case
     Nothing    -> void $ outputStrLn "Moriturus te saluto."
     Just ""    -> loop
-    Just input -> outputStrLn (readExpr input >>= eval >>= show) >> loop
+    Just input -> outputStrLn (readEvalPrint input) >> loop
   ignoreCtrlC = handleInterrupt loop . withInterrupt
 
+readEvalPrint :: String -> String
+readEvalPrint input =
+  extractValue $ trapError (show <$> (readExpr input >>= eval))

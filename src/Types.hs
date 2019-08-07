@@ -50,7 +50,5 @@ instance Show LispError where
       "Expected " ++ show expected ++ " args: found values " ++ unwordsList found
   show (Parser parseErr) = "Parse error at " ++ show parseErr
 
-type ThrowsError = Either String
-
 unwordsList :: Show a => [a] -> String
 unwordsList = unwords . map show
