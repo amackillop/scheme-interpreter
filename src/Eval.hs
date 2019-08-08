@@ -38,9 +38,9 @@ primitives =
   , ("mod"           , numericOp mod)
   , ("quotient"      , numericOp quot)
   , ("remainder"     , numericOp rem)
-  , ("symbol?"       , isSymbol)
-  , ("string?"       , isString)
-  , ("number?"       , isNumber)
+  , ("symbol?"       , return . isSymbol)
+  , ("string?"       , return . isString)
+  , ("number?"       , return . isNumber)
   , ("="             , equals)
   , ("eq?"           , equals)
   , ("string=?"      , equals)
@@ -52,28 +52,27 @@ equals :: [LispVal] -> ThrowsError LispVal
 equals (x : xs) = return $ Bool $ all (== x) xs
 
 str2Sym :: [LispVal] -> ThrowsError LispVal
-str2Sym [String x] = return $ Atom x
+str2Sym [String x ] = return $ Atom x
 str2Sym [notString] = throwError . show $ TypeMismatch "string" notString
 
 sym2str :: [LispVal] -> ThrowsError LispVal
-sym2str [Atom x] = return $ String x
+sym2str [Atom x ] = return $ String x
 sym2str [notAtom] = throwError . show $ TypeMismatch "symbol" notAtom
 
 numericOp :: (Integer -> Integer -> Integer) -> [LispVal] -> ThrowsError LispVal
-numericOp op params        = Number . foldl1 op <$> mapM unpackNum params
+numericOp op params = Number . foldl1 op <$> mapM unpackNum params
+ where
+  unpackNum (Number n) = return n
+  unpackNum notNum     = throwError . show $ TypeMismatch "number" notNum
 
-isSymbol :: [LispVal] -> ThrowsError LispVal
-isSymbol [Atom _] = return $ Bool True
-isSymbol _        = return $ Bool False
+isSymbol :: [LispVal] -> LispVal
+isSymbol [Atom _] = Bool True
+isSymbol _        = Bool False
 
-isString :: [LispVal] -> ThrowsError LispVal
-isString [String _] = return $ Bool True
-isString _          = return $ Bool False
+isString :: [LispVal] -> LispVal
+isString [String _] = Bool True
+isString _          = Bool False
 
-isNumber :: [LispVal] -> ThrowsError LispVal
-isNumber [Number _] = return $ Bool True
-isNumber _          = return $ Bool False
-
-unpackNum :: LispVal -> ThrowsError Integer
-unpackNum (Number n) = return n
-unpackNum notNum     = throwError . show $ TypeMismatch "number" notNum
+isNumber :: [LispVal] -> LispVal
+isNumber [Number _] = Bool True
+isNumber _          = Bool False

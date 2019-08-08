@@ -42,7 +42,7 @@ data LispError = NumArgs Integer [LispVal]
 
 instance Show LispError where
   show (UnboundVar     message varname) = message ++ ": " ++ varname
-  show (NotFunction    message func   ) = message ++ ": " ++ show func
+  show (NotFunction    message func   ) = message ++ ": `" ++ func ++ "`"
   show (BadSpecialForm message form   ) = message ++ ": " ++ show form
   show (TypeMismatch expected found) =
       "Invalid type: expected " ++ expected ++ ", found " ++ show found
