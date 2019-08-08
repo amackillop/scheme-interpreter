@@ -41,15 +41,15 @@ primitives =
   , ("symbol?"       , return . isSymbol)
   , ("string?"       , return . isString)
   , ("number?"       , return . isNumber)
-  , ("="             , equals)
-  , ("eq?"           , equals)
-  , ("string=?"      , equals)
+  , ("="             , return . equals)
+  , ("eq?"           , return . equals)
+  , ("string=?"      , return . equals)
   , ("string->symbol", str2Sym)
   , ("symbol->string", sym2str)
   ]
 
-equals :: [LispVal] -> ThrowsError LispVal
-equals (x : xs) = return $ Bool $ all (== x) xs
+equals :: [LispVal] -> LispVal
+equals (x : xs) = Bool $ all (== x) xs
 
 str2Sym :: [LispVal] -> ThrowsError LispVal
 str2Sym [String x ] = return $ Atom x
