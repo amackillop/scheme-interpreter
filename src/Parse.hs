@@ -30,12 +30,14 @@ spaces :: Parser ()
 spaces = skipMany1 space
 
 escaped :: Parser String
-escaped = char '\\' >> oneOf "\\\"ntr" >>= return . \case
-  '\\' -> "\\"
-  '"'  -> "\""
-  't'  -> "\t"
-  'n'  -> "\n"
-  'r'  -> "\r"
+escaped = char2Str <$> (char '\\' >> oneOf "\\\"ntr")
+ where
+  char2Str = \case
+    '\\' -> "\\"
+    '"'  -> "\""
+    't'  -> "\t"
+    'n'  -> "\n"
+    'r'  -> "\r"
 
 radixNum :: Parser Integer
 radixNum = do
@@ -61,9 +63,8 @@ radixNum = do
 
 parseString :: Parser LispVal
 parseString =
-  String
-    .   concat
-    <$> (char '"' *> (many $ many1 (noneOf "\"\\") <|> escaped) <* char '"')
+  String . concat
+    <$> (char '"' *> many (many1 (noneOf "\"\\") <|> escaped) <* char '"')
 
 parseAtom :: Parser LispVal
 parseAtom = do
@@ -79,9 +80,11 @@ parseChar :: Parser LispVal
 parseChar = Character <$> (string "#\\" >> (parseCharName <|> anyChar))
 
 parseCharName :: Parser Char
-parseCharName = (string "space" <|> string "newline") >>= return . \case
-  "space"   -> ' '
-  "newline" -> '\n'
+parseCharName = str2Char <$> (string "space" <|> string "newline")
+ where
+  str2Char = \case
+    "space"   -> ' '
+    "newline" -> '\n'
 
 parseNumber :: Parser LispVal
 parseNumber = (Number . read <$> many1 digit) <|> (Number <$> radixNum)
