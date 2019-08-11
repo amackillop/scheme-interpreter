@@ -118,11 +118,11 @@ parseDottedList = inParens $ do
 
 parseQuoted :: Parser LispVal
 parseQuoted =
-  char '\'' >> parseExpr >>= (\x -> return $ List [Atom "quote", x])
+  char '\'' >> parseExpr >>= (\x -> pure $ List [Atom "quote", x])
 
 parseBackQuotes :: Parser LispVal
 parseBackQuotes =
-  char '`' >> parseExpr >>= (\x -> return $ List [Atom "backquote", x])
+  char '`' >> parseExpr >>= (\x -> pure $ List [Atom "backquote", x])
 
 parseVector :: Parser LispVal
 parseVector =
@@ -131,4 +131,4 @@ parseVector =
 readExpr :: String -> ThrowsError LispVal
 readExpr input = case parse parseExpr "lisp" input of
   Left  err -> throwError . show $ Parser err
-  Right val -> return val
+  Right val -> pure val

@@ -13,20 +13,20 @@ import qualified Data.Vector                   as V
 import           Control.Monad.Except
 import           Types
 import           Error
-import qualified Control.Lens.Combinators as L
+import qualified Control.Lens.Combinators      as L
 
 type ThrowsError = Either String
 
 $(L.makePrisms ''LispVal)
 
 eval :: LispVal -> ThrowsError LispVal
-eval val@(String    _                  ) = return val
-eval val@(Number    _                  ) = return val
-eval val@(Bool      _                  ) = return val
-eval val@(Character _                  ) = return val
-eval (    List      [Atom "quote", val]) = return val
+eval val@(String    _                  ) = pure val
+eval val@(Number    _                  ) = pure val
+eval val@(Bool      _                  ) = pure val
+eval val@(Character _                  ) = pure val
+eval (    List      [Atom "quote", val]) = pure val
 eval (    List      (Atom func : args) ) = mapM eval args >>= apply func
-eval val@(Vector    _                  ) = return val
+eval val@(Vector    _                  ) = pure val
 eval badForm =
   throwError . show $ BadSpecialForm "Unrecognized special form" badForm
 
@@ -39,19 +39,22 @@ apply func args =
 
 primitives :: [(String, [LispVal] -> ThrowsError LispVal)]
 primitives =
-  [ ("+"             , numericOp (+))
-  , ("-"             , numericOp (-))
-  , ("*"             , numericOp (*))
-  , ("/"             , numericOp div)
-  , ("mod"           , numericOp mod)
-  , ("quotient"      , numericOp quot)
-  , ("remainder"     , numericOp rem)
-  , ("symbol?"       , return . isSymbol)
-  , ("string?"       , return . isString)
-  , ("number?"       , return . isNumber)
-  , ("="             , return . equals)
-  , ("eq?"           , return . equals)
-  , ("string=?"      , return . equals)
+  [ ("+"        , numericOp (+))
+  , ("-"        , numericOp (-))
+  , ("*"        , numericOp (*))
+  , ("/"        , numericOp div)
+  , ("mod"      , numericOp mod)
+  , ("quotient" , numericOp quot)
+  , ("remainder", numericOp rem)
+  , ("symbol?"  , pure . isSymbol)
+  , ("string?"  , pure . isString)
+  , ("number?"  , pure . isNumber)
+  , ( "="
+    , pure . equals
+    )
+  -- , ("<"             , pure . )
+  , ("eq?"           , pure . equals)
+  , ("string=?"      , pure . equals)
   , ("string->symbol", str2Sym)
   , ("symbol->string", sym2str)
   ]
@@ -60,17 +63,17 @@ equals :: [LispVal] -> LispVal
 equals (x : xs) = Bool $ all (== x) xs
 
 str2Sym :: [LispVal] -> ThrowsError LispVal
-str2Sym [String x ] = return $ Atom x
+str2Sym [String x ] = pure $ Atom x
 str2Sym [notString] = throwError . show $ TypeMismatch "string" notString
 
 sym2str :: [LispVal] -> ThrowsError LispVal
-sym2str [Atom x ] = return $ String x
+sym2str [Atom x ] = pure $ String x
 sym2str [notAtom] = throwError . show $ TypeMismatch "symbol" notAtom
 
 numericOp :: (Integer -> Integer -> Integer) -> [LispVal] -> ThrowsError LispVal
 numericOp op params = Number . foldl1 op <$> mapM unpackNum params
  where
-  unpackNum (Number n) = return n
+  unpackNum (Number n) = pure n
   unpackNum notNum     = throwError . show $ TypeMismatch "number" notNum
 
 -- Probably overkill to use a lens here but this is for my own learning.

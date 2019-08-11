@@ -4,7 +4,7 @@ import           Control.Monad.Except
 import           Types
 
 trapError :: (MonadError a m, Show a) => m String -> m String
-trapError action = catchError action (return . show)
+trapError action = catchError action (pure . show)
 
 extractValue :: Either a b -> b
 extractValue (Right val) = val
