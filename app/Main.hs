@@ -10,7 +10,6 @@ import           Error
 import           Eval
 import           Types
 
-
 main :: IO ()
 main = runInputT defaultSettings loop
  where

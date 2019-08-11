@@ -1,4 +1,9 @@
+{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE KindSignatures #-}
+
 module Eval where
 
 import qualified Data.Vector                   as V
@@ -8,8 +13,11 @@ import qualified Data.Vector                   as V
 import           Control.Monad.Except
 import           Types
 import           Error
+import qualified Control.Lens.Combinators as L
 
 type ThrowsError = Either String
+
+$(L.makePrisms ''LispVal)
 
 eval :: LispVal -> ThrowsError LispVal
 eval val@(String    _                  ) = return val
@@ -65,14 +73,15 @@ numericOp op params = Number . foldl1 op <$> mapM unpackNum params
   unpackNum (Number n) = return n
   unpackNum notNum     = throwError . show $ TypeMismatch "number" notNum
 
-isSymbol :: [LispVal] -> LispVal
-isSymbol [Atom _] = Bool True
-isSymbol _        = Bool False
+-- Probably overkill to use a lens here but this is for my own learning.
+isTypeOf :: L.Fold s a -> [s] -> LispVal
+isTypeOf lispType = Bool <$> L.has (L._head . lispType)
 
 isString :: [LispVal] -> LispVal
-isString [String _] = Bool True
-isString _          = Bool False
+isString = isTypeOf _String
+
+isSymbol :: [LispVal] -> LispVal
+isSymbol = isTypeOf _Atom
 
 isNumber :: [LispVal] -> LispVal
-isNumber [Number _] = Bool True
-isNumber _          = Bool False
+isNumber = isTypeOf _Number
