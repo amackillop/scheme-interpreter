@@ -13,13 +13,9 @@ import           Control.Monad.Except
 
 
 import qualified Data.Char                     as C
-import qualified Data.Vector                   as V
-                                                ( Vector
-                                                , fromList
-                                                )
+import           Data.Vector                    ( fromList )
 import qualified Numeric                       as N
 import           Types
-import           Error
 
 type ThrowsError = Either String
 
@@ -63,7 +59,8 @@ radixNum = do
 
 parseString :: Parser LispVal
 parseString =
-  String . concat
+  String
+    .   concat
     <$> (char '"' *> many (many1 (noneOf "\"\\") <|> escaped) <* char '"')
 
 parseAtom :: Parser LispVal
@@ -104,21 +101,20 @@ parseExpr =
 inParens :: Parser a -> Parser a
 inParens parser = char '(' *> parser <* char ')'
 
-sepBySpaces :: Parser Char -> Parser String
+sepBySpaces :: Parser a -> Parser [a]
 sepBySpaces parser = sepBy parser spaces
 
 parseList :: Parser LispVal
-parseList = List <$> inParens (sepBy parseExpr spaces)
+parseList = List <$> inParens (sepBySpaces parseExpr)
 
 parseDottedList :: Parser LispVal
 parseDottedList = inParens $ do
-  head <- endBy parseExpr spaces
-  tail <- char '.' *> spaces *> parseExpr
-  return $ DottedList head tail
+  hd <- endBy parseExpr spaces
+  tl <- char '.' *> spaces *> parseExpr
+  return $ DottedList hd tl
 
 parseQuoted :: Parser LispVal
-parseQuoted =
-  char '\'' >> parseExpr >>= (\x -> pure $ List [Atom "quote", x])
+parseQuoted = char '\'' >> parseExpr >>= (\x -> pure $ List [Atom "quote", x])
 
 parseBackQuotes :: Parser LispVal
 parseBackQuotes =
@@ -126,7 +122,7 @@ parseBackQuotes =
 
 parseVector :: Parser LispVal
 parseVector =
-  Vector . V.fromList <$> (char '#' >> inParens (sepBy parseExpr spaces))
+  Vector . fromList <$> (char '#' >> inParens (sepBySpaces parseExpr))
 
 readExpr :: String -> ThrowsError LispVal
 readExpr input = case parse parseExpr "lisp" input of

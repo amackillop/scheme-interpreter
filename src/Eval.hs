@@ -6,13 +6,8 @@
 
 module Eval where
 
-import qualified Data.Vector                   as V
-                                                ( Vector
-                                                , toList
-                                                )
 import           Control.Monad.Except
 import           Types
-import           Error
 import qualified Control.Lens.Combinators      as L
 
 type ThrowsError = Either String
@@ -39,20 +34,18 @@ apply func args =
 
 primitives :: [(String, [LispVal] -> ThrowsError LispVal)]
 primitives =
-  [ ("+"        , numericOp (+))
-  , ("-"        , numericOp (-))
-  , ("*"        , numericOp (*))
-  , ("/"        , numericOp div)
-  , ("mod"      , numericOp mod)
-  , ("quotient" , numericOp quot)
-  , ("remainder", numericOp rem)
-  , ("symbol?"  , pure . isSymbol)
-  , ("string?"  , pure . isString)
-  , ("number?"  , pure . isNumber)
-  , ( "="
-    , pure . equals
-    )
-  -- , ("<"             , pure . )
+  [ ("+"             , numericOp (+))
+  , ("-"             , numericOp (-))
+  , ("*"             , numericOp (*))
+  , ("/"             , numericOp div)
+  , ("mod"           , numericOp mod)
+  , ("quotient"      , numericOp quot)
+  , ("remainder"     , numericOp rem)
+  , ("symbol?"       , pure . isSymbol)
+  , ("string?"       , pure . isString)
+  , ("number?"       , pure . isNumber)
+  , ("="             , pure . equals)
+  -- , ("<"             , pure . lessThan)
   , ("eq?"           , pure . equals)
   , ("string=?"      , pure . equals)
   , ("string->symbol", str2Sym)
@@ -61,6 +54,10 @@ primitives =
 
 equals :: [LispVal] -> LispVal
 equals (x : xs) = Bool $ all (== x) xs
+
+-- lessThan :: [LispVal] -> LispVal
+-- lessThan [x] = Bool True
+-- lessThan (x : xs) = x > 
 
 str2Sym :: [LispVal] -> ThrowsError LispVal
 str2Sym [String x ] = pure $ Atom x

@@ -1,5 +1,7 @@
 library:
   source-dirs: src
+  ghc-options:
+  - -Wall
 tests:
   scheme-interpreter-test:
     source-dirs: test
