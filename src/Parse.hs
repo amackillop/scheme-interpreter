@@ -16,6 +16,7 @@ import qualified Data.Char                     as C
 import           Data.Vector                    ( fromList )
 import qualified Numeric                       as N
 import           Types
+import           Data.Functor                   ( ($>) )
 
 type ThrowsError = Either String
 
@@ -77,11 +78,7 @@ parseChar :: Parser LispVal
 parseChar = Character <$> (string "#\\" >> (parseCharName <|> anyChar))
 
 parseCharName :: Parser Char
-parseCharName = str2Char <$> (string "space" <|> string "newline")
- where
-  str2Char = \case
-    "space"   -> ' '
-    "newline" -> '\n'
+parseCharName = (string "space" $> ' ') <|> (string "newline" $> '\n')
 
 parseNumber :: Parser LispVal
 parseNumber = (Number . read <$> many1 digit) <|> (Number <$> radixNum)
