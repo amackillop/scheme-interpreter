@@ -81,7 +81,7 @@ parseCharName :: Parser Char
 parseCharName = (string "space" $> ' ') <|> (string "newline" $> '\n')
 
 parseNumber :: Parser LispVal
-parseNumber = (Number . read <$> many1 digit) <|> (Number <$> radixNum)
+parseNumber = (Integer . read <$> many1 digit) <|> (Integer <$> radixNum)
 
 parseExpr :: Parser LispVal
 parseExpr =

@@ -11,24 +11,25 @@ data LispVal = Atom String
              | List [LispVal]
              | DottedList [LispVal] LispVal
              | Vector (V.Vector LispVal)
-             | Number Integer
+             | Integer Integer
              | Float Float
              | Character Char
              | String String
              | Bool Bool deriving Eq
 
 instance Show LispVal where
-  show (String val) = "\"" ++ val ++ "\""
-  show (Character val)   = "#\\" ++ case val of
+  show (String    val) = "\"" ++ val ++ "\""
+  show (Character val) = "#\\" ++ case val of
     ' '  -> "space"
     '\n' -> "newline"
     _    -> [val]
-  show (Atom   val ) = val
-  show (Number val)  = show val
-  show (Bool   val) = if val then "#t" else "#f"
-  show (List   contents) = "(" ++ unwordsList contents ++ ")"
-  show (DottedList head tail) =
-    "(" ++ unwordsList head ++ " . " ++ show tail ++ ")"
+  show (Atom      val) = val
+  show (Integer   val) = show val
+  show (Float     val) = show val
+  show (Bool      val) = if val then "#t" else "#f"
+  show (List      contents) = "(" ++ unwordsList contents ++ ")"
+  show (DottedList hd tl) =
+    "(" ++ unwordsList hd ++ " . " ++ show tl ++ ")"
   show (Vector contents) = "#(" ++ unwordsList (V.toList contents) ++ ")"
 
 data LispError = NumArgs Integer [LispVal]
@@ -39,7 +40,6 @@ data LispError = NumArgs Integer [LispVal]
                | UnboundVar String String
                | Default String
 
-
 instance Show LispError where
   show (UnboundVar     message varname) = message ++ ": " ++ varname
   show (NotFunction    message func   ) = message ++ ": `" ++ func ++ "`"
@@ -49,6 +49,7 @@ instance Show LispError where
   show (NumArgs expected found) =
       "Expected " ++ show expected ++ " args: found values " ++ unwordsList found
   show (Parser parseErr) = "Parse error at " ++ show parseErr
+  show (Default message) = message
 
 unwordsList :: Show a => [a] -> String
 unwordsList = unwords . map show
