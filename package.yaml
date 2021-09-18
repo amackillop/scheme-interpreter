@@ -17,7 +17,6 @@ tests:
 copyright: 2019 Austin Mackillop
 maintainer: austin.mackillop@gmail.com
 dependencies:
-- lens
 - mtl
 - haskeline
 - vector

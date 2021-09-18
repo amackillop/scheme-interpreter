@@ -3,8 +3,10 @@ module Error where
 import           Control.Monad.Except
 import           Types
 
-trapError :: (MonadError a m, Show a) => m String -> m String
-trapError action = catchError action (pure . show)
+type ThrowsError = Either LispError
 
-extractValue :: Either a b -> b
+trapError :: (MonadError a m, Show a) => m String -> m String
+trapError action = catchError action (return . show)
+
+extractValue :: ThrowsError a -> a
 extractValue (Right val) = val
