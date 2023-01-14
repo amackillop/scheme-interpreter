@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 -- {-# LANGUAGE DataKinds #-}
 -- {-# LANGUAGE FlexibleContexts #-}
 -- {-# LANGUAGE KindSignatures #-}
@@ -17,12 +19,16 @@ eval val@(String _) = pure val
 eval val@(Number _) = pure val
 eval val@(Bool _) = pure val
 eval val@(Character _) = pure val
+eval val@(Vector _) = pure val
 eval (List []) = pure $ Unit ()
 eval (List [Atom _]) = throwError $ NumArgs 1 []
 eval (List [Atom "quote", val]) = pure val
 eval (List [Atom "backquote", val]) = pure val
+eval (List [Atom "if", predicate, conseq, alt]) =
+  eval predicate >>= \case
+    Bool False -> eval alt
+    _ -> eval conseq
 eval (List (Atom func : args)) = mapM eval args >>= apply func
-eval val@(Vector _) = pure val
 eval badForm = throwError $ BadSpecialForm "Unrecognized special form" badForm
 
 apply :: String -> [LispVal] -> ThrowsError LispVal
@@ -58,12 +64,14 @@ primitives =
     ("string>?", strBoolBinOp (>)),
     ("string<=?", strBoolBinOp (<=)),
     ("string>=?", strBoolBinOp (>=)),
-    ("eq?", pure . equals),
+    ("eq?", pure . eq),
+    ("eqv?", eqv),
     ("string->symbol", str2Sym),
     ("symbol->string", sym2str)
   ]
 
-lispOp :: (LispVal -> ThrowsError a) -> (a -> a -> a) -> [LispVal] -> ThrowsError a
+lispOp ::
+  (LispVal -> ThrowsError a) -> (a -> a -> a) -> [LispVal] -> ThrowsError a
 lispOp _ _ [] = throwError $ NumArgs 1 []
 lispOp unpacker op args = foldr1 op <$> mapM unpacker args
 
@@ -112,8 +120,14 @@ boolBoolBinOp = boolBinOp unpackBool
 strBoolBinOp :: (String -> String -> Bool) -> [LispVal] -> ThrowsError LispVal
 strBoolBinOp = boolBinOp unpackStr
 
-equals :: [LispVal] ->  LispVal
-equals (arg : rest) = Bool $ all (== arg) rest
+eq :: [LispVal] -> ThrowsError LispVal
+eq (arg : rest) = return . Bool $ all (== arg) rest
+
+eqv :: [LispVal] -> ThrowsError LispVal
+eqv [arg1, arg2] = return . Bool $ arg1 == arg2
+eqv badArgList = throwError $ NumArgsExact 2 badArgList
+
+-- equal :: [LispVal] -> ThrowsError LispVal
 
 
 str2Sym :: [LispVal] -> ThrowsError LispVal
@@ -145,6 +159,12 @@ unpackBool :: LispVal -> ThrowsError Bool
 unpackBool (Bool b) = return b
 unpackBool notBool = throwError $ TypeMismatch "boolean" notBool
 
+unpackEquals :: LispVal -> LispVal -> Unpacker -> ThrowsError Bool
+unpackEquals arg1 arg2 (AnyUnpacker unpacker) = do
+  unpacked1 <- unpacker arg1
+  unpacked2 <- unpacker arg2
+  return $ unpacked1 == unpacked2 `catchError` const (return False)
+
 isString :: [LispVal] -> LispVal
 isString [String _] = Bool True
 isString _ = Bool False
@@ -163,3 +183,23 @@ isInteger _ = False
 isFloat :: [LispVal] -> Bool
 isFloat [Number (Float _)] = True
 isFloat _ = False
+
+car :: [LispVal] -> ThrowsError LispVal
+car [List (x : _)] = return x
+car [DottedList (x : _) _] = return x
+car [badArg] = throwError $ TypeMismatch "pair" badArg
+car badArgList = throwError $ NumArgs 1 badArgList
+
+cdr :: [LispVal] -> ThrowsError LispVal
+cdr [List (_ : xs)] = return $ List xs
+cdr [DottedList [_] x] = return x
+cdr [DottedList (_ : xs) x] = return $ DottedList xs x
+cdr [badArg] = throwError $ TypeMismatch "pair" badArg
+cdr badArgList = throwError $ NumArgs 1 badArgList
+
+cons :: [LispVal] -> ThrowsError LispVal
+cons [x, List []] = return $ List [x]
+cons [x, List xs] = return . List $ x : xs
+cons [x, DottedList xs xlast] = return $ DottedList (x : xs) xlast
+cons [x1, x2] = return $ DottedList [x1] x2
+cons badArgList = throwError $ NumArgsExact 2 badArgList

@@ -118,7 +118,6 @@ parseExpr =
       try parseQuoted,
       try parseList,
       try parseDottedList,
-      -- try parseSingletonList,
       try parseBackQuotes,
       try parseVector,
       try parseChar,

@@ -7,6 +7,7 @@ module Types
 import qualified Data.Vector                   as V
 import           GHC.Real                       ( Ratio((:%)) )
 import           Text.ParserCombinators.Parsec  ( ParseError )
+import Error (ThrowsError)
 
 data LispVal = Atom String
              | Bool Bool
@@ -126,3 +127,5 @@ instance Show LispError where
 
 unwordsList :: Show a => [a] -> String
 unwordsList = unwords . map show
+
+data Unpacker = Eq a => AnyUnpacker (LispVal -> ThrowsError a)
